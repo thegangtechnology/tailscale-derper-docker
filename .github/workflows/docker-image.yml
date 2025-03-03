@@ -56,7 +56,11 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build and push
-        if: ${{ env.IMAGE_EXISTS == 'false' || github.event_name != 'schedule' }}
+        if: >-
+          ${{
+            needs.get-latest-version.outputs.image_exists == 'false' ||
+            github.event_name != 'schedule'
+          }}
         uses: docker/build-push-action@v6
         with:
           context: .
