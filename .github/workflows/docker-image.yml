@@ -11,7 +11,10 @@ on:
 permissions:
   contents: read
   packages: write
-
+env:
+  # IMAGE_NAME: ${{ secrets.CUSTOM_IMAGE_NAME || github.event.repository.name }}
+  IMAGE_NAME: "tailscale-derper"
+  
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -38,7 +41,7 @@ jobs:
           GHCR_TOKEN=$(echo ${{ secrets.GITHUB_TOKEN }} | base64)
           HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
             -H "Authorization: Bearer $GHCR_TOKEN" \
-            https://ghcr.io/v2/${{ github.repository }}/manifests/${{ env.TAILSCALE_VERSION }}
+            https://ghcr.io/v2/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}/manifests/${{ env.TAILSCALE_VERSION }}
             )
           IMAGE_EXISTS=$(if [ $HTTP_CODE -eq 200 ]; then echo "true"; else echo "false"; fi)
           echo "HTTP code: $HTTP_CODE, Image exists: $IMAGE_EXISTS"
@@ -60,7 +63,7 @@ jobs:
           platforms: linux/amd64, linux/arm64
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/derper:${{ env.TAILSCALE_VERSION }}
-            ghcr.io/${{ github.repository_owner }}/derper:latest
+            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ env.TAILSCALE_VERSION }}
+            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
           build-args: |
             DERP_VERSION=${{ env.TAILSCALE_VERSION }}
