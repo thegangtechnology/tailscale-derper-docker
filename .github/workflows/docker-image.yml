@@ -31,14 +31,25 @@ jobs:
       - name: Check if the image exists
         id: check_image
         run: |
-          GHCR_TOKEN=$(echo ${{ secrets.GITHUB_TOKEN }} | base64)
           HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
-            -H "Authorization: Bearer $GHCR_TOKEN" \
-            https://ghcr.io/v2/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}/manifests/${{ steps.get_version.outputs.tailscale_version }}
-          )
+            -H "Authorization: Bearer $(echo ${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}| base64)" \
+            -H "Accept: application/vnd.oci.image.index.v1+json, application/vnd.oci.image.manifest.v1+json, application/vnd.docker.distribution.manifest.v2+json" \
+            "https://ghcr.io/v2/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}/manifests/${{ steps.get_version.outputs.tailscale_version }}")
+          
           IMAGE_EXISTS=$([[ $HTTP_CODE -eq 200 ]] && echo "true" || echo "false")
           echo "HTTP code: $HTTP_CODE, Image exists: $IMAGE_EXISTS"
           echo "image_exists=$IMAGE_EXISTS" >> $GITHUB_OUTPUT
+      
+      - name: Check image
+        id: image_exists
+        uses: cloudposse/github-action-docker-image-exists@main
+        with:
+          registry: registry.hub.docker.com
+          organization: "${{ github.repository_owner }}"
+          repository: "${{ env.IMAGE_NAME }}"
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ steps.get_version.outputs.tailscale_version }}
 
   build:
     needs: get-latest-version
