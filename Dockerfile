@@ -2,7 +2,7 @@ FROM golang:latest AS builder
 WORKDIR /app
 
 ARG DERP_VERSION=latest
-RUN go install tailscale.com/cmd/derper@${DERP_VERSION}
+RUN go install tailscale.com/cmd/derper@${DERP_VERSION} && go install tailscale.com/cmd/derpprobe@${DERP_VERSION}
 
 FROM ubuntu
 WORKDIR /app
