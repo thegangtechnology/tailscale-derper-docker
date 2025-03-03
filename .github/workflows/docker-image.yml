@@ -4,21 +4,49 @@ on:
   push:
     branches: [main]
   schedule:
-    # Runs "every Monday" (see https://crontab.guru)
     - cron: '0 0 * * MON'
   workflow_dispatch:
 
 permissions:
   contents: read
   packages: write
-env:
-  # IMAGE_NAME: ${{ secrets.CUSTOM_IMAGE_NAME || github.event.repository.name }}
-  IMAGE_NAME: "tailscale-derper"
-  
-jobs:
-  build:
-    runs-on: ubuntu-latest
 
+env:
+  IMAGE_NAME: "tailscale-derper"
+
+jobs:
+  get-latest-version:
+    runs-on: ubuntu-latest
+    outputs:
+      tailscale_version: ${{ steps.get_version.outputs.tailscale_version }}
+      image_exists: ${{ steps.check_image.outputs.image_exists }}
+    steps:
+      - name: Get latest tailscale version
+        id: get_version
+        run: |
+          TAILSCALE_VERSION=$(curl -s https://api.github.com/repos/tailscale/tailscale/releases/latest | jq -r '.tag_name')
+          echo "Latest tailscale version: $TAILSCALE_VERSION"
+          echo "tailscale_version=$TAILSCALE_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Check if the image exists
+        id: check_image
+        run: |
+          GHCR_TOKEN=$(echo ${{ secrets.GITHUB_TOKEN }} | base64)
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer $GHCR_TOKEN" \
+            https://ghcr.io/v2/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}/manifests/${{ steps.get_version.outputs.tailscale_version }}
+          )
+          IMAGE_EXISTS=$([[ $HTTP_CODE -eq 200 ]] && echo "true" || echo "false")
+          echo "HTTP code: $HTTP_CODE, Image exists: $IMAGE_EXISTS"
+          echo "image_exists=$IMAGE_EXISTS" >> $GITHUB_OUTPUT
+
+  build:
+    needs: get-latest-version
+    if: ${{ needs.get-latest-version.outputs.image_exists == 'false' || github.event_name != 'schedule' }}
+    strategy:
+      matrix:
+        platform: [linux/amd64, linux/arm64]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
 
@@ -30,44 +58,20 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
           logout: true
 
-      - name: Get latest tailscale version
-        run: |
-          TAILSCALE_VERSION=$(curl -s https://api.github.com/repos/tailscale/tailscale/releases/latest | jq -r '.tag_name')
-          echo "Latest tailscale version: $TAILSCALE_VERSION"
-          echo TAILSCALE_VERSION=$TAILSCALE_VERSION >> $GITHUB_ENV
-
-      - name: Check if the image exists
-        run: |
-          GHCR_TOKEN=$(echo ${{ secrets.GITHUB_TOKEN }} | base64)
-          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
-            -H "Authorization: Bearer $GHCR_TOKEN" \
-            https://ghcr.io/v2/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}/manifests/${{ env.TAILSCALE_VERSION }}
-            )
-          IMAGE_EXISTS=$(if [ $HTTP_CODE -eq 200 ]; then echo "true"; else echo "false"; fi)
-          echo "HTTP code: $HTTP_CODE, Image exists: $IMAGE_EXISTS"
-          echo IMAGE_EXISTS=$IMAGE_EXISTS >> $GITHUB_ENV
-
       - name: Set up QEMU
-        if: ${{ env.IMAGE_EXISTS == 'false' || github.event_name != 'schedule' }}
         uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
-        if: ${{ env.IMAGE_EXISTS == 'false' || github.event_name != 'schedule' }}
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and push
-        if: >-
-          ${{
-            needs.get-latest-version.outputs.image_exists == 'false' ||
-            github.event_name != 'schedule'
-          }}
+      - name: Build and push (${{ matrix.platform }})
         uses: docker/build-push-action@v6
         with:
           context: .
-          platforms: linux/amd64, linux/arm64
+          platforms: ${{ matrix.platform }}
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ env.TAILSCALE_VERSION }}
+            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ needs.get-latest-version.outputs.tailscale_version }}
             ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
           build-args: |
-            DERP_VERSION=${{ env.TAILSCALE_VERSION }}
+            DERP_VERSION=${{ needs.get-latest-version.outputs.tailscale_version }}
