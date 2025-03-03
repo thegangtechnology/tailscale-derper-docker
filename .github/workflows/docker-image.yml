@@ -39,17 +39,6 @@ jobs:
           IMAGE_EXISTS=$([[ $HTTP_CODE -eq 200 ]] && echo "true" || echo "false")
           echo "HTTP code: $HTTP_CODE, Image exists: $IMAGE_EXISTS"
           echo "image_exists=$IMAGE_EXISTS" >> $GITHUB_OUTPUT
-      
-      - name: Check image
-        id: image_exists
-        uses: cloudposse/github-action-docker-image-exists@main
-        with:
-          registry: registry.hub.docker.com
-          organization: "${{ github.repository_owner }}"
-          repository: "${{ env.IMAGE_NAME }}"
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ steps.get_version.outputs.tailscale_version }}
 
   build:
     needs: get-latest-version
