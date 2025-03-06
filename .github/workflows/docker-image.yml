@@ -20,9 +20,9 @@ env:
 
 jobs:
   get-tailscale-latest-version:
-    runs-on:
-      group: ubuntu-x64-docker-dind
-      labels: self-hosted
+    # runs-on:
+    #   group: ubuntu-x64-docker-dind
+    #   labels: self-hosted
     outputs:
       tailscale_version: ${{ steps.get_version.outputs.tailscale_version }}
       image_exists: ${{ steps.check_image.outputs.image_exists }}
@@ -47,14 +47,15 @@ jobs:
           echo "image_exists=$IMAGE_EXISTS" >> $GITHUB_OUTPUT
 
   build:
+    # Below steps need more tuning, See: Correct way to build multi platform images - https://docs.docker.com/build/ci/github-actions/multi-platform/
     needs: get-tailscale-latest-version
     if: ${{ needs.get-latest-version.outputs.image_exists == 'false' || github.event_name != 'schedule' }}
     strategy:
       matrix:
         platform: [linux/amd64, linux/arm64]
-    runs-on:
-      group: ubuntu-x64-docker-dind
-      labels: self-hosted
+    # runs-on:
+    #   group: ubuntu-x64-docker-dind
+    #   labels: self-hosted
     steps:
       - uses: actions/checkout@v2
 
