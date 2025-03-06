@@ -31,3 +31,53 @@ Fully DERP setup offical documentation: https://tailscale.com/kb/1118/custom-der
 ## Client verification
 
 In order to use `DERP_VERIFY_CLIENTS`, the container needs access to Tailscale's Local API, which can usually be accessed through `/var/run/tailscale/tailscaled.sock`. If you're running Tailscale bare-metal on Linux, adding this to the `docker run` command should be enough: `-v /var/run/tailscale/tailscaled.sock:/var/run/tailscale/tailscaled.sock`
+
+## Example Docker Compose
+
+```
+services:
+  derper:
+    image: ghcr.io/thegangtechnology/tailscale-derper:latest
+    container_name: derper
+    restart: always
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+    ports:
+      - 80:80
+      - 443:443
+      - "3478:3478/udp"
+    environment:
+      - DERP_DOMAIN=<DERP_DOMAIN>
+      - DERP_VERIFY_CLIENTS=true
+      # If using built-in Let's Encrypt, specify these instead:
+      - DERP_CERT_MODE=letsencrypt
+      - DERP_CERT_DIR=/app/certs
+    volumes:
+      - /var/run/tailscale/tailscaled.sock:/var/run/tailscale/tailscaled.sock
+      - ./volumes/lets-encrypt-certs:/app/certs
+    labels:
+      - com.centurylinklabs.watchtower.enable=true
+      - com.centurylinklabs.watchtower.scope=tailscale-derper # Custom update group for derper
+
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    restart: always
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock # Required for Watchtower to manage containers
+    environment:
+      - TZ=Asia/Bangkok
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_MONITOR_ONLY=false
+      - WATCHTOWER_RUN_ONCE=false
+      - WATCHTOWER_ROLLING_RESTART=true
+      - WATCHTOWER_LABEL_ENABLE=true
+      - WATCHTOWER_SCOPE=tailscale-derper # Only updates derper service
+      - WATCHTOWER_SCHEDULE=0 4 * * 7 # Runs every Sunday at 4AM
+```
