@@ -50,7 +50,7 @@ jobs:
   build:
     # Below steps need more tuning, See: Correct way to build multi platform images - https://docs.docker.com/build/ci/github-actions/multi-platform/
     needs: get-tailscale-latest-version
-    if: ${{ needs.get-latest-version.outputs.image_exists == 'false' || github.event_name != 'schedule' }}
+    if: ${{ needs.get-tailscale-latest-version.outputs.image_exists == 'false' || github.event_name != 'schedule' }}
     strategy:
       matrix:
         platform: [linux/amd64, linux/arm64]
@@ -82,7 +82,7 @@ jobs:
           platforms: ${{ matrix.platform }}
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ needs.get-latest-version.outputs.tailscale_version }}
+            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ needs.get-tailscale-latest-version.outputs.tailscale_version }}
             ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
           build-args: |
-            DERP_VERSION=${{ needs.get-latest-version.outputs.tailscale_version }}
+            DERP_VERSION=${{ needs.get-tailscale-latest-version.outputs.tailscale_version }}
