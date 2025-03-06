@@ -20,6 +20,7 @@ env:
 
 jobs:
   get-tailscale-latest-version:
+    runs-on: ubuntu-latest
     # runs-on:
     #   group: ubuntu-x64-docker-dind
     #   labels: self-hosted
@@ -53,6 +54,7 @@ jobs:
     strategy:
       matrix:
         platform: [linux/amd64, linux/arm64]
+    runs-on: ubuntu-latest
     # runs-on:
     #   group: ubuntu-x64-docker-dind
     #   labels: self-hosted
