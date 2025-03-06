@@ -25,6 +25,7 @@ ENV DERP_VERIFY_CLIENTS false
 ENV DERP_VERIFY_CLIENT_URL ""
 
 COPY --from=builder /go/bin/derper .
+COPY --from=builder /go/bin/derpprobe .
 
 CMD /app/derper --hostname=$DERP_DOMAIN \
     --certmode=$DERP_CERT_MODE \
