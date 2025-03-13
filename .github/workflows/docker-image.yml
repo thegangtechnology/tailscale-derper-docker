@@ -53,7 +53,7 @@ jobs:
     if: ${{ needs.get-tailscale-latest-version.outputs.image_exists == 'false' || github.event_name != 'schedule' }}
     strategy:
       matrix:
-        platform: [linux/amd64, linux/arm64]
+        platform: [linux/amd64]
     runs-on: ubuntu-latest
     # runs-on:
     #   group: ubuntu-x64-docker-dind
