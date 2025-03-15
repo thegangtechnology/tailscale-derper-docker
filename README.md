@@ -9,7 +9,7 @@
 > required: set env `DERP_DOMAIN` to your domain
 
 ```bash
-docker run -e DERP_DOMAIN=derper.your-domain.com -p 80:80 -p 443:443 -p 3478:3478/udp fredliang/derper
+docker run -e DERP_DOMAIN=derper.your-domain.com -p 80:80 -p 443:443 -p 3478:3478/udp ghcr.io/thegangtechnology/tailscale-derper
 ```
 
 | env                    | required | description                                                                 | default value     |
@@ -47,13 +47,14 @@ services:
     ports:
       - 80:80
       - 443:443
-      - "3478:3478/udp"
+      - "13478:13478/udp"
     environment:
       - DERP_DOMAIN=<DERP_DOMAIN>
       - DERP_VERIFY_CLIENTS=true
       # If using built-in Let's Encrypt, specify these instead:
       - DERP_CERT_MODE=letsencrypt
       - DERP_CERT_DIR=/app/certs
+      - DERP_STUN_PORT=13478
     volumes:
       - /var/run/tailscale/tailscaled.sock:/var/run/tailscale/tailscaled.sock
       - ./volumes/lets-encrypt-certs:/app/certs
