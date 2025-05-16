@@ -30,7 +30,8 @@ COPY --from=builder /go/bin/derpprobe .
 
 CMD /app/derper --hostname=$DERP_DOMAIN \
     # waiting for this PR to be release https://github.com/tailscale/tailscale/pull/15125. -- Current Version 1.80.3 without PR
-    # --socket=$TAILSCALED_SOCKET_PATH \
+    # version 1.82.5 is merge fix so --socket should be usable
+    --socket=$TAILSCALED_SOCKET_PATH \
     --certmode=$DERP_CERT_MODE \
     --certdir=$DERP_CERT_DIR \
     --a=$DERP_ADDR \
